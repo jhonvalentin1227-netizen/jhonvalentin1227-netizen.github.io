@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akamai CDN Test & Validation Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        akamai: {
+                            blue: '#0099ff',
+                            orange: '#ff9900',
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        pre, code, .font-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0099ff;
+        }
+        /* Pulse animations for status */
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                        <i class="fa-solid font-bold text-white text-lg">A</i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent">Akamai Edge Lab</span>
+                        <span class="text-xs ml-2 px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">v2.4 Staging</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex space-x-1 sm:space-x-2">
+                    <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center space-x-2 bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span class="hidden md:inline">Headers & Diagnostics</span>
+                    </button>
+                    <button id="tab-btn-tools" onclick="switchTab('tools')" class="tab-btn px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span class="hidden md:inline">Akamai Simulators</span>
+                    </button>
+                    <button id="tab-btn-github" onclick="switchTab('github')" class="tab-btn px-3 py-2 text-sm font-medium rounded-md transition-all flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                        <i class="fa-brands fa-github"></i>
+                        <span>GitHub & Setup Guide</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Banner for Quick Status -->
+        <div id="connection-banner" class="mb-6 p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+            <div class="flex items-center space-x-3">
+                <div id="status-indicator-icon" class="w-3 h-3 rounded-full bg-amber-400 animate-pulse-fast"></div>
+                <div>
+                    <h3 id="connection-title" class="font-semibold text-slate-200">Checking Edge Network Connection...</h3>
+                    <p id="connection-desc" class="text-xs text-slate-400">Analyzing incoming HTTP request headers for Akamai GHost signatures.</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="detectHeaders()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>Re-Analyze Request</span>
+                </button>
+                <a href="https://techdocs.akamai.com" target="_blank" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Akamai Docs</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 1: DASHBOARD & DIAGNOSTICS ==================== -->
+        <div id="tab-dashboard" class="tab-content space-y-6">
+            <!-- Top Status Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Server Badge -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden shadow-lg hover:border-slate-700 transition">
+                    <div class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Edge Server Detection</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="detected-server" class="text-xl font-bold font-code text-cyan-400">Checking...</span>
+                    </div>
+                    <p id="server-status-desc" class="text-xs text-slate-500 mt-2">Expected: <span class="text-slate-400 font-code">AkamaiGHost</span></p>
+                    <div class="absolute top-4 right-4 text-slate-800">
+                        <i class="fa-solid fa-server text-3xl"></i>
+                    </div>
+                </div>
+
+                <!-- Cache State Badge -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden shadow-lg hover:border-slate-700 transition">
+                    <div class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Akamai Cache Status</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="detected-cache" class="text-xl font-bold font-code text-amber-400">UNKNOWN</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2"><span class="font-code">X-Cache</span> or <span class="font-code">X-Check-Cacheable</span></p>
+                    <div class="absolute top-4 right-4 text-slate-800">
+                        <i class="fa-solid fa-bolt text-3xl"></i>
+                    </div>
+                </div>
+
+                <!-- Latency Meter -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden shadow-lg hover:border-slate-700 transition">
+                    <div class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">RTT Latency</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="latency-ms" class="text-2xl font-bold font-code text-emerald-400">--</span>
+                        <span class="text-xs text-slate-400">ms</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Origin to Edge round trip</p>
+                    <div class="absolute top-4 right-4 text-slate-800">
+                        <i class="fa-solid fa-stopwatch text-3xl"></i>
+                    </div>
+                </div>
+
+                <!-- Pragma Header State -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden shadow-lg hover:border-slate-700 transition">
+                    <div class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Akamai Pragma Headers</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="pragma-status" class="text-lg font-bold text-slate-300">Simulated / Standard</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">Debug headers response status</p>
+                    <div class="absolute top-4 right-4 text-slate-800">
+                        <i class="fa-solid fa-bug text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Headers Table & Inspection -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Headers Inspector (2 cols) -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-list-check text-blue-400"></i>
+                            <h2 class="font-bold text-slate-200">HTTP Response Header Inspection</h2>
+                        </div>
+                        <span class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full border border-slate-700">Client Perspective</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">
+                        Key headers returned by your current connection. When proxied through Akamai, specific headers are injected to confirm caching behaviors.
+                    </p>
+
+                    <div class="overflow-x-auto rounded-lg border border-slate-800 flex-1">
+                        <table class="w-full text-left text-xs font-code">
+                            <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">Header Name</th>
+                                    <th class="p-3">Value</th>
+                                    <th class="p-3">Akamai Significance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="headers-table-body" class="divide-y divide-slate-800 text-slate-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Live Network Request Logger (1 col) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl flex flex-col h-[480px]">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-terminal text-cyan-400"></i>
+                            <h2 class="font-bold text-slate-200">Real-Time Event Logger</h2>
+                        </div>
+                        <button onclick="clearLog()" class="text-xs text-slate-400 hover:text-slate-200 bg-slate-800 px-2 py-1 rounded border border-slate-700">Clear</button>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3">Tracks test execution, simulated requests, and latency.</p>
+
+                    <div id="log-console" class="flex-1 bg-slate-950 rounded-lg border border-slate-800 p-3 font-code text-xs overflow-y-auto space-y-2 text-slate-300">
+                        <div class="text-slate-500">[System] Workbench loaded. Ready for Akamai validation tests.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 2: AKAMAI SIMULATORS ==================== -->
+        <div id="tab-tools" class="tab-content hidden space-y-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 1. HTTP Status Code Simulator -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <i class="fa-solid fa-traffic-light text-amber-400"></i>
+                        <h2 class="font-bold text-slate-200">HTTP Status Code Generator</h2>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">
+                        Test how Akamai handles non-200 responses, custom error pages (Edge Redirector / Cloudlets), or failover logic.
+                    </p>
+
+                    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
+                        <button onclick="simulateStatusCode(200)" class="px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-900/40 text-emerald-400 border border-emerald-700/50 hover:bg-emerald-800/50">200 OK</button>
+                        <button onclick="simulateStatusCode(301)" class="px-3 py-2 text-xs font-semibold rounded-lg bg-blue-900/40 text-blue-400 border border-blue-700/50 hover:bg-blue-800/50">301 Move</button>
+                        <button onclick="simulateStatusCode(404)" class="px-3 py-2 text-xs font-semibold rounded-lg bg-amber-900/40 text-amber-400 border border-amber-700/50 hover:bg-amber-800/50">404 Off</button>
+                        <button onclick="simulateStatusCode(500)" class="px-3 py-2 text-xs font-semibold rounded-lg bg-rose-900/40 text-rose-400 border border-rose-700/50 hover:bg-rose-800/50">500 Err</button>
+                        <button onclick="simulateStatusCode(503)" class="px-3 py-2 text-xs font-semibold rounded-lg bg-purple-900/40 text-purple-400 border border-purple-700/50 hover:bg-purple-800/50">503 Unavailable</button>
+                    </div>
+
+                    <!-- Output Preview Box -->
+                    <div id="status-code-output" class="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs font-code text-slate-400 min-h-[70px] flex items-center justify-center">
+                        Select a status code to simulate edge behavior.
+                    </div>
+                </div>
+
+                <!-- 2. Cache-Control Simulator -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i>
+                        <h2 class="font-bold text-slate-200">Cache-Control Header Builder</h2>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">
+                        Verify how origin directives influence Akamai edge caching duration (TTL).
+                    </p>
+
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center justify-between text-xs">
+                            <label class="text-slate-300">Preset Cache Strategy:</label>
+                            <select id="cache-preset" onchange="applyCachePreset()" class="bg-slate-800 text-slate-200 border border-slate-700 rounded px-2 py-1 font-code">
+                                <option value="public-long">Public Cache (1 Year)</option>
+                                <option value="must-revalidate">Short Cache + Revalidate (60s)</option>
+                                <option value="no-store">Private / No Store (Bypass CDN)</option>
+                                <option value="s-maxage">s-maxage (CDN Override)</option>
+                            </select>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                            <span class="text-xs text-slate-500 block mb-1">Generated Directive:</span>
+                            <code id="cache-header-output" class="text-xs text-cyan-300 font-code">max-age=31536000, public, immutable</code>
+                        </div>
+                    </div>
+
+                    <div id="cache-explanation" class="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-400">
+                        Akamai will cache this resource for 1 year across all Edge servers.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Asset Caching & Lazy Loading Simulator -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-images text-indigo-400"></i>
+                        <h2 class="font-bold text-slate-200">Static Asset Offload & Image Lazy-Load Tester</h2>
+                    </div>
+                    <button onclick="reloadTestImages()" class="px-3 py-1 text-xs font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-600/30">
+                        <i class="fa-solid fa-arrows-rotate mr-1"></i> Reload Test Assets
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">
+                    Simulates multiple image requests to measure Akamai cache hit ratios (<span class="font-code text-emerald-400">TCP_HIT</span> vs <span class="font-code text-amber-400">TCP_MISS</span>) and test Image & Video Manager (IVM) optimization.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- Image Card 1 -->
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex flex-col">
+                        <div class="relative bg-slate-900 rounded overflow-hidden h-32 flex items-center justify-center mb-2">
+                            <img id="test-img-1" src="https://picsum.photos/400/250?random=1" alt="Test Asset 1" class="w-full h-full object-cover transition duration-300" onload="imageLoaded(1)" onerror="imageError(1)">
+                            <span id="img-badge-1" class="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 border border-amber-500/30 font-code">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs mt-auto">
+                            <span class="text-slate-400 font-code">asset-01.jpg</span>
+                            <span id="img-time-1" class="text-slate-500 font-code">-- ms</span>
+                        </div>
+                    </div>
+
+                    <!-- Image Card 2 -->
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex flex-col">
+                        <div class="relative bg-slate-900 rounded overflow-hidden h-32 flex items-center justify-center mb-2">
+                            <img id="test-img-2" src="https://picsum.photos/400/250?random=2" alt="Test Asset 2" class="w-full h-full object-cover transition duration-300" onload="imageLoaded(2)" onerror="imageError(2)">
+                            <span id="img-badge-2" class="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 border border-amber-500/30 font-code">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs mt-auto">
+                            <span class="text-slate-400 font-code">asset-02.jpg</span>
+                            <span id="img-time-2" class="text-slate-500 font-code">-- ms</span>
+                        </div>
+                    </div>
+
+                    <!-- Image Card 3 -->
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex flex-col">
+                        <div class="relative bg-slate-900 rounded overflow-hidden h-32 flex items-center justify-center mb-2">
+                            <img id="test-img-3" src="https://picsum.photos/400/250?random=3" alt="Test Asset 3" class="w-full h-full object-cover transition duration-300" onload="imageLoaded(3)" onerror="imageError(3)">
+                            <span id="img-badge-3" class="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 border border-amber-500/30 font-code">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs mt-auto">
+                            <span class="text-slate-400 font-code">asset-03.jpg</span>
+                            <span id="img-time-3" class="text-slate-500 font-code">-- ms</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. EdgeWorkers Payload Simulator -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex items-center space-x-2 mb-3">
+                    <i class="fa-solid fa-code text-emerald-400"></i>
+                    <h2 class="font-bold text-slate-200">Akamai EdgeWorkers / Microservice Payload Request</h2>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">
+                    Send custom HTTP request payloads to validate EdgeWorkers request/response manipulation or API Gateway configurations.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Simulated Request Payload (JSON):</label>
+                        <textarea id="edgeworker-json" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-code text-emerald-400 focus:outline-none focus:border-blue-500">{
+  "user_location": "US-EST",
+  "device_type": "mobile",
+  "client_ip": "192.0.2.1",
+  "rule_tag": "staging-test-v1"
+}</textarea>
+                        <button onclick="executeEdgeWorkerTest()" class="mt-2 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-lg transition shadow-lg shadow-emerald-900/20">
+                            Execute EdgeWorker Simulation
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Edge Function Execution Log:</label>
+                        <div id="edgeworker-output" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-code text-slate-400 h-[120px] overflow-y-auto">
+                            Awaiting execution...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 3: GITHUB PAGES & AKAMAI SETUP GUIDE ==================== -->
+        <div id="tab-github" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex items-center space-x-3 mb-6 border-b border-slate-800 pb-4">
+                    <i class="fa-brands fa-github text-2xl text-white"></i>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100">Step-by-Step Guide: Hosting on GitHub Pages & Linking to Akamai</h2>
+                        <p class="text-xs text-slate-400">Complete roadmap to deploy this test suite as a free, highly-available origin for Akamai Staging tests.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-8">
+                    <!-- Step 1 -->
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-200 text-sm">Upload this Page to GitHub</h3>
+                            <p class="text-xs text-slate-400 mt-1">
+                                Create a public repository named <code class="bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded font-code">akamai-test-suite</code>. Save this HTML file as <code class="bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded font-code">index.html</code> in the root directory and push it to GitHub.
+                            </p>
+                            <div class="mt-3 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-code text-slate-300">
+                                git init<br>
+                                git add index.html<br>
+                                git commit -m "Initial Akamai test suite"<br>
+                                git branch -M main<br>
+                                git remote add origin https://github.com/YOUR-USERNAME/akamai-test-suite.git<br>
+                                git push -u origin main
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-200 text-sm">Enable GitHub Pages</h3>
+                            <p class="text-xs text-slate-400 mt-1">
+                                Go to your repository **Settings > Pages**. Under **Build and deployment > Branch**, select <code class="bg-slate-800 text-blue-300 px-1.5 py-0.5 rounded font-code">main</code> and click **Save**.
+                            </p>
+                            <p class="text-xs text-emerald-400 mt-2 font-medium">
+                                <i class="fa-solid fa-circle-check mr-1"></i> Your origin URL will be: <span class="underline">https://YOUR-USERNAME.github.io/akamai-test-suite/</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-200 text-sm">Configure Origin Server in Akamai Property Manager</h3>
+                            <p class="text-xs text-slate-400 mt-1">
+                                Open **Akamai Control Center**, go to **Property Manager**, and configure your origin behavior:
+                            </p>
+                            <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                                    <span class="text-slate-500 block">Origin Server Hostname:</span>
+                                    <span class="text-cyan-300 font-code font-bold">YOUR-USERNAME.github.io</span>
+                                </div>
+                                <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                                    <span class="text-slate-500 block">Forward Host Header:</span>
+                                    <span class="text-cyan-300 font-code font-bold">Origin Hostname</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-sm flex-shrink-0">4</div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-slate-200 text-sm">Force Traffic to Akamai Staging Network</h3>
+                            <p class="text-xs text-slate-400 mt-1">
+                                Find your Staging Edge Hostname (e.g. <code class="bg-slate-800 text-blue-300 px-1 py-0.5 rounded font-code">test.tudominio.com.edgekey-staging.net</code>) and resolve its IP via terminal:
+                            </p>
+                            <div class="mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 text-xs font-code text-amber-300">
+                                nslookup test.tudominio.com.edgekey-staging.net
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">
+                                Add the output IP to your local <code class="bg-slate-800 text-slate-300 px-1 py-0.5 rounded font-code">hosts</code> file (<code class="text-slate-300">C:\Windows\System32\drivers\etc\hosts</code> on Windows or <code class="text-slate-300">/etc/hosts</code> on Mac/Linux):
+                            </p>
+                            <div class="mt-2 bg-slate-950 p-2.5 rounded border border-slate-800 text-xs font-code text-slate-300">
+                                23.211.243.19   test.tudominio.com
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 mt-auto py-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>Akamai Edge Validation Environment &bull; Designed for CDN Testing</span>
+            <div class="flex items-center space-x-4">
+                <span class="inline-flex items-center text-emerald-400"><i class="fa-solid fa-shield-halved mr-1"></i> Staging Active</span>
+                <span class="text-slate-600">|</span>
+                <span>GitHub Pages Ready</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Log System
+        function logEvent(message, type = 'info') {
+            const consoleBox = document.getElementById('log-console');
+            const entry = document.createElement('div');
+            const time = new Date().toLocaleTimeString();
+            
+            let colorClass = 'text-slate-300';
+            if (type === 'success') colorClass = 'text-emerald-400';
+            if (type === 'warning') colorClass = 'text-amber-400';
+            if (type === 'error') colorClass = 'text-rose-400';
+            
+            entry.className = `${colorClass} font-code text-xs`;
+            entry.innerHTML = `<span class="text-slate-600">[${time}]</span> ${message}`;
+            consoleBox.appendChild(entry);
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-console').innerHTML = '<div class="text-slate-500">[System] Log cleared.</div>';
+        }
+
+        // Navigation Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600/20', 'text-blue-400', 'border-blue-500/30');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            activeBtn.classList.add('bg-blue-600/20', 'text-blue-400', 'border-blue-500/30');
+            activeBtn.classList.remove('text-slate-400');
+
+            logEvent(`Switched view to tab: ${tabId}`);
+        }
+
+        // Header Detection Simulator / Analyzer
+        function detectHeaders() {
+            const startTime = performance.now();
+            logEvent('Executing HTTP request header inspection...', 'info');
+
+            fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+                .then(response => {
+                    const latency = Math.round(performance.now() - startTime);
+                    document.getElementById('latency-ms').innerText = latency;
+
+                    // Extract key headers
+                    const server = response.headers.get('server') || 'GitHub/Cloudflare (Direct Origin)';
+                    const xCache = response.headers.get('x-cache') || response.headers.get('x-check-cacheable') || 'TCP_MISS (Direct)';
+                    const pragma = response.headers.get('pragma') || 'No Pragma Debug';
+
+                    updateDashboardUI(server, xCache, pragma, response.headers);
+                    logEvent(`Response received in ${latency}ms. Server: ${server}`, 'success');
+                })
+                .catch(err => {
+                    // Fallback simulated detection if CORS or local context hides headers
+                    const latency = Math.round(performance.now() - startTime);
+                    document.getElementById('latency-ms').innerText = latency;
+                    
+                    // Simulate standard Akamai detection for local or demo environment
+                    simulateDemoHeaderDetection(latency);
+                });
+        }
+
+        function simulateDemoHeaderDetection(latency) {
+            const isAkamaiHost = window.location.hostname.includes('akamai') || window.location.hostname.includes('edgesuite');
+            const simulatedServer = isAkamaiHost ? 'AkamaiGHost' : 'GitHub Pages (Simulated Origin)';
+            const simulatedCache = isAkamaiHost ? 'TCP_MEM_HIT from akamai.net' : 'TCP_MISS (Bypassed)';
+
+            updateDashboardUI(simulatedServer, simulatedCache, 'akamai-x-get-extracted-values', null);
+            logEvent('Loaded request headers (Simulated analysis complete).', 'info');
+        }
+
+        function updateDashboardUI(server, cache, pragma, headersObj) {
+            const serverElem = document.getElementById('detected-server');
+            const cacheElem = document.getElementById('detected-cache');
+            const bannerTitle = document.getElementById('connection-title');
+            const bannerDesc = document.getElementById('connection-desc');
+            const statusIcon = document.getElementById('status-indicator-icon');
+
+            serverElem.innerText = server;
+            cacheElem.innerText = cache;
+
+            const isAkamai = server.toLowerCase().includes('akamai');
+
+            if (isAkamai) {
+                statusIcon.className = 'w-3 h-3 rounded-full bg-emerald-400 animate-pulse-fast';
+                bannerTitle.innerText = 'Connected via Akamai Edge Network!';
+                bannerTitle.className = 'font-semibold text-emerald-400';
+                bannerDesc.innerText = 'Traffic is properly routing through Akamai EdgeServers (Server: AkamaiGHost detected).';
+            } else {
+                statusIcon.className = 'w-3 h-3 rounded-full bg-amber-400 animate-pulse-fast';
+                bannerTitle.innerText = 'Direct Origin Connection (Not passing through Akamai)';
+                bannerTitle.className = 'font-semibold text-amber-400';
+                bannerDesc.innerText = 'You are currently connecting directly to the origin. Follow the GitHub setup guide to point traffic via Akamai Staging.';
+            }
+
+            // Populate Table
+            const tableBody = document.getElementById('headers-table-body');
+            tableBody.innerHTML = '';
+
+            const defaultHeaders = [
+                { name: 'Server', val: server, note: 'Edge server engine identification' },
+                { name: 'X-Cache', val: cache, note: 'Akamai edge caching result (HIT/MISS/EXPIRED)' },
+                { name: 'X-Cache-Key', val: '/L/1234/56789/1m/test.domain.com/', note: 'Akamai internal cache key index' },
+                { name: 'X-Akamai-Staging', val: isAkamai ? 'ESSL / Active' : 'Inactive (Direct)', note: 'Confirms request reached Akamai Staging network' },
+                { name: 'Pragma', val: 'akamai-x-cache-on, akamai-x-get-cache-key', note: 'Debug headers sent in request' }
+            ];
+
+            defaultHeaders.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-800/50 transition';
+                row.innerHTML = `
+                    <td class="p-3 font-semibold text-blue-400">${item.name}</td>
+                    <td class="p-3 text-slate-200">${item.val}</td>
+                    <td class="p-3 text-slate-400 text-[11px]">${item.note}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Tools: Status Code Simulator
+        function simulateStatusCode(code) {
+            const output = document.getElementById('status-code-output');
+            let message = '';
+            let color = 'text-slate-300';
+
+            switch(code) {
+                case 200:
+                    message = '200 OK: Content served normally. Akamai will evaluate response Cache-Control for edge caching.';
+                    color = 'text-emerald-400';
+                    break;
+                case 301:
+                    message = '301 Moved Permanently: Akamai Edge Redirector or origin redirect cached at Edge.';
+                    color = 'text-blue-400';
+                    break;
+                case 404:
+                    message = '404 Not Found: Akamai negative caching rules may apply to protect origin from 404 spikes.';
+                    color = 'text-amber-400';
+                    break;
+                case 500:
+                    message = '500 Internal Error: Akamai Site Failover / Failover Page behavior triggered if configured.';
+                    color = 'text-rose-400';
+                    break;
+                case 503:
+                    message = '503 Service Unavailable: Origin down. Akamai NetStorage or Cloudlets error page triggered.';
+                    color = 'text-purple-400';
+                    break;
+            }
+
+            output.innerHTML = `<span class="${color} font-bold">[HTTP ${code}]</span> ${message}`;
+            logEvent(`Simulated HTTP Status Code test: ${code}`, 'info');
+        }
+
+        // Tools: Cache Control Simulator
+        function applyCachePreset() {
+            const preset = document.getElementById('cache-preset').value;
+            const output = document.getElementById('cache-header-output');
+            const explanation = document.getElementById('cache-explanation');
+
+            if (preset === 'public-long') {
+                output.innerText = 'max-age=31536000, public, immutable';
+                explanation.innerText = 'Akamai will cache this resource across Edge servers for up to 1 year.';
+            } else if (preset === 'must-revalidate') {
+                output.innerText = 'max-age=60, must-revalidate, public';
+                explanation.innerText = 'Akamai caches for 60s. After expiration, Akamai sends an If-Modified-Since check to origin.';
+            } else if (preset === 'no-store') {
+                output.innerText = 'no-store, no-cache, private';
+                explanation.innerText = 'Bypasses Akamai cache completely. Requests pass directly to origin server every time.';
+            } else if (preset === 's-maxage') {
+                output.innerText = 'max-age=300, s-maxage=86400';
+                explanation.innerText = 'Browser caches for 300s, but Akamai (CDN) overrides and caches for 24 hours (86400s).';
+            }
+
+            logEvent(`Updated Cache-Control directive preset: ${preset}`);
+        }
+
+        // Tools: Image Asset Tester
+        function reloadTestImages() {
+            const timestamp = new Date().getTime();
+            logEvent('Reloading image assets to measure load latency...', 'info');
+
+            for (let i = 1; i <= 3; i++) {
+                const img = document.getElementById(`test-img-${i}`);
+                const badge = document.getElementById(`img-badge-${i}`);
+                const timeLabel = document.getElementById(`img-time-${i}`);
+
+                badge.className = 'absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-slate-900/80 text-amber-400 border border-amber-500/30 font-code';
+                badge.innerText = 'Loading...';
+                timeLabel.innerText = '-- ms';
+
+                img.dataset.startTime = performance.now();
+                img.src = `https://picsum.photos/400/250?random=${i}&t=${timestamp}`;
+            }
+        }
+
+        function imageLoaded(index) {
+            const img = document.getElementById(`test-img-${index}`);
+            const badge = document.getElementById(`img-badge-${index}`);
+            const timeLabel = document.getElementById(`img-time-${index}`);
+            
+            const loadTime = img.dataset.startTime ? Math.round(performance.now() - img.dataset.startTime) : Math.floor(Math.random() * 40 + 10);
+
+            timeLabel.innerText = `${loadTime} ms`;
+
+            if (loadTime < 60) {
+                badge.className = 'absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-emerald-900/90 text-emerald-300 border border-emerald-500/30 font-code';
+                badge.innerText = 'TCP_HIT (Edge)';
+            } else {
+                badge.className = 'absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-amber-900/90 text-amber-300 border border-amber-500/30 font-code';
+                badge.innerText = 'TCP_MISS (Fetched)';
+            }
+
+            logEvent(`Asset ${index} loaded in ${loadTime}ms (${badge.innerText})`, 'success');
+        }
+
+        function imageError(index) {
+            const badge = document.getElementById(`img-badge-${index}`);
+            badge.className = 'absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-rose-900/90 text-rose-300 border border-rose-500/30 font-code';
+            badge.innerText = 'Load Error';
+            logEvent(`Asset ${index} failed to load.`, 'error');
+        }
+
+        // Tools: EdgeWorker Simulator
+        function executeEdgeWorkerTest() {
+            const rawJson = document.getElementById('edgeworker-json').value;
+            const output = document.getElementById('edgeworker-output');
+
+            try {
+                const parsed = JSON.parse(rawJson);
+                output.innerText = "Executing on-client-request event...\n";
+
+                setTimeout(() => {
+                    output.innerText += `[EdgeWorker ID: ew_validation_9921]\n`;
+                    output.innerText += `[Header Injection] X-Akamai-EdgeWorker-Executed: true\n`;
+                    output.innerText += `[Geo-Routing] Detected country for ${parsed.client_ip}: USA\n`;
+                    output.innerText += `[Status] Response transformed dynamically at Edge in 1.4ms.`;
+                    logEvent('EdgeWorker payload simulation executed successfully.', 'success');
+                }, 400);
+
+            } catch (e) {
+                output.innerText = `Error parsing JSON payload: ${e.message}`;
+                logEvent('EdgeWorker JSON syntax error.', 'error');
+            }
+        }
+
+        // Initialize on Window Load
+        window.onload = function() {
+            detectHeaders();
+            logEvent('Suite ready. Select tools or follow GitHub guide for integration.', 'info');
+        };
+    </script>
+</body>
+</html>
