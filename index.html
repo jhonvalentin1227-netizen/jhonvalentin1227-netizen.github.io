@@ -97,7 +97,7 @@
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <!-- Brand / Logo -->
+                <!-- Brand / akamai -->
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
                         <i class="fa-solid fa-cloud text-white text-base"></i>
@@ -274,8 +274,8 @@
                     <label class="block text-xs font-semibold text-slate-300">Add or Change Local Image File Names to Test:</label>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <input type="text" id="img-path-1" value="images/dimtec.jpeg" class="bg-slate-900 border border-slate-700 rounded p-2 text-xs font-code text-slate-200 focus:border-blue-500 focus:outline-none" placeholder="images/foto1.jpg">
-                        <input type="text" id="img-path-2" value="images/logo.png" class="bg-slate-900 border border-slate-700 rounded p-2 text-xs font-code text-slate-200 focus:border-blue-500 focus:outline-none" placeholder="images/foto2.jpg">
-                        <input type="text" id="img-path-3" value="images/banner.jpg" class="bg-slate-900 border border-slate-700 rounded p-2 text-xs font-code text-slate-200 focus:border-blue-500 focus:outline-none" placeholder="images/foto3.jpg">
+                        <input type="text" id="img-path-2" value="images/akamai.png" class="bg-slate-900 border border-slate-700 rounded p-2 text-xs font-code text-slate-200 focus:border-blue-500 focus:outline-none" placeholder="images/foto2.jpg">
+                        <input type="text" id="img-path-3" value="images/idea.png" class="bg-slate-900 border border-slate-700 rounded p-2 text-xs font-code text-slate-200 focus:border-blue-500 focus:outline-none" placeholder="images/foto3.jpg">
                     </div>
                 </div>
 
@@ -299,12 +299,12 @@
                     <!-- Image Card 2 -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col">
                         <div class="relative bg-slate-900 rounded-lg overflow-hidden h-44 flex items-center justify-center mb-3 border border-slate-800/80">
-                            <img id="local-img-2" src="images/logo.png" alt="Local Asset 2" class="w-full h-full object-contain" onload="onImgLoad(2)" onerror="onImgError(2)">
+                            <img id="local-img-2" src="images/akamai.png" alt="Local Asset 2" class="w-full h-full object-contain" onload="onImgLoad(2)" onerror="onImgError(2)">
                             <span id="img-badge-2" class="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-slate-900/90 text-amber-400 border border-amber-500/30 font-code">Ready</span>
                         </div>
                         <div class="space-y-1">
                             <div class="flex justify-between items-center text-xs">
-                                <span id="img-name-2" class="text-slate-300 font-code truncate max-w-[180px]">images/logo.png</span>
+                                <span id="img-name-2" class="text-slate-300 font-code truncate max-w-[180px]">images/akamai.png</span>
                                 <span id="img-time-2" class="text-emerald-400 font-code font-bold">-- ms</span>
                             </div>
                             <p id="img-status-2" class="text-[11px] text-slate-500">Press "Fetch Assets" to analyze loading time.</p>
@@ -314,12 +314,12 @@
                     <!-- Image Card 3 -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col">
                         <div class="relative bg-slate-900 rounded-lg overflow-hidden h-44 flex items-center justify-center mb-3 border border-slate-800/80">
-                            <img id="local-img-3" src="images/banner.jpg" alt="Local Asset 3" class="w-full h-full object-contain" onload="onImgLoad(3)" onerror="onImgError(3)">
+                            <img id="local-img-3" src="images/idea.png" alt="Local Asset 3" class="w-full h-full object-contain" onload="onImgLoad(3)" onerror="onImgError(3)">
                             <span id="img-badge-3" class="absolute top-2 left-2 text-[10px] px-2 py-0.5 rounded bg-slate-900/90 text-amber-400 border border-amber-500/30 font-code">Ready</span>
                         </div>
                         <div class="space-y-1">
                             <div class="flex justify-between items-center text-xs">
-                                <span id="img-name-3" class="text-slate-300 font-code truncate max-w-[180px]">images/banner.jpg</span>
+                                <span id="img-name-3" class="text-slate-300 font-code truncate max-w-[180px]">images/idea.png</span>
                                 <span id="img-time-3" class="text-emerald-400 font-code font-bold">-- ms</span>
                             </div>
                             <p id="img-status-3" class="text-[11px] text-slate-500">Press "Fetch Assets" to analyze loading time.</p>
@@ -408,8 +408,8 @@ jhonvalentin1227-netizen.github.io/
 ├── index.html                 <span class="text-slate-500">(This dashboard)</span>
 ├── images/                    <span class="text-slate-500">(Local image folder)</span>
 │   ├── dimtec.jpeg            <span class="text-slate-500">(Your image)</span>
-│   ├── logo.png
-│   └── banner.jpg
+│   ├── akamai.png
+│   └── idea.png
 └── fonts/                     <span class="text-slate-500">(Local fonts folder)</span>
     ├── CustomFont.woff2
     └── CustomMono.woff2
